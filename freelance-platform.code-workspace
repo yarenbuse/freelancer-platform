@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "path": ".",
+      "name": "freelance-platform"
+    }
+  ],
+  "settings": {
+    "java.configuration.updateBuildConfiguration": "automatic",
+    "java.import.maven.enabled": true,
+    "java.import.gradle.enabled": false,
+    "java.jdt.ls.lombokSupport.enabled": true,
+    "maven.executable.preferMavenWrapper": true,
+    "maven.terminal.useJavaHome": true
+  }
+}
