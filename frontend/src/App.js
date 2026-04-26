@@ -14,6 +14,7 @@ function App() {
   const [myJobs,   setMyJobs]   = useState([]);   // CLIENT'ın ilanları
   const [openJobs, setOpenJobs] = useState([]);   // Tüm açık ilanlar (Freelancer görünümü)
   const [jobsLoading, setJobsLoading] = useState(false);
+  const [successMsg, setSuccessMsg]   = useState('');  // Başarı bildirimi
 
   // ── Form state'leri ──────────────────────────────────────────────────────
   const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -115,14 +116,22 @@ function App() {
         budget:      parseFloat(jobData.budget),
         duration:    parseInt(jobData.duration, 10),
       });
-      // İlan kaydedildikten sonra listeyi yenile
+      // ✅ İlan başarıyla kaydedildikten sonra listeyi sunucudan yenile
       await fetchMyJobs(user.id);
       setIsJobOpen(false);
       setJobData({ title: '', description: '', budget: '', duration: '' });
+      // Başarı bildirimi göster ve 3 saniye sonra gizle
+      setSuccessMsg('İlan başarıyla yayınlandı!');
+      setTimeout(() => setSuccessMsg(''), 3000);
     } catch (err) {
-      const serverMsg = err.response?.data?.message || err.response?.data || null;
+      const data = err.response?.data;
+      const serverMsg =
+        (typeof data === 'string' ? data : null) ||
+        data?.message ||
+        data?.error ||
+        null;
       setJobError(serverMsg || 'İlan oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.');
-      console.error('İlan hatası:', err.response?.data || err.message);
+      console.error('İlan hatası [status=' + err.response?.status + ']:', data || err.message);
     }
   };
 
@@ -131,6 +140,18 @@ function App() {
 
   return (
     <div className="App">
+      {/* ════════════ BAŞARI BİLDİRİMİ ════════════ */}
+      {successMsg && (
+        <div style={{
+          position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 9999,
+          background: '#22c55e', color: '#fff', padding: '0.85rem 1.5rem',
+          borderRadius: '14px', fontWeight: 700, fontSize: '0.95rem',
+          boxShadow: '0 4px 24px rgba(34,197,94,0.35)',
+          display: 'flex', alignItems: 'center', gap: '0.5rem'
+        }}>
+          ✅ {successMsg}
+        </div>
+      )}
       <Dashboard
         user={user}
         roleLabel={roleLabel}

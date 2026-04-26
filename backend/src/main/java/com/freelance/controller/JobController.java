@@ -5,9 +5,12 @@ import com.freelance.service.JobService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/jobs")
@@ -31,15 +34,25 @@ public class JobController {
 
     /** Yeni iş ilanı oluştur */
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Job createJob(@RequestBody JobRequest request) {
-        return jobService.createJob(
-                request.getEmployerId(),
-                request.getTitle(),
-                request.getDescription(),
-                request.getBudget(),
-                request.getDuration()
-        );
+    public ResponseEntity<?> createJob(@RequestBody JobRequest request) {
+        try {
+            Job saved = jobService.createJob(
+                    request.getEmployerId(),
+                    request.getTitle(),
+                    request.getDescription(),
+                    request.getBudget(),
+                    request.getDuration()
+            );
+            return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+        } catch (ResponseStatusException ex) {
+            return ResponseEntity
+                    .status(ex.getStatusCode())
+                    .body(Map.of("message", ex.getReason() != null ? ex.getReason() : ex.getMessage()));
+        } catch (Exception ex) {
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Beklenmedik bir hata oluştu: " + ex.getMessage()));
+        }
     }
 
     // ── İç DTO sınıfı ────────────────────────────────────────────────────

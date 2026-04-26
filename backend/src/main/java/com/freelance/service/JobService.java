@@ -26,7 +26,7 @@ public class JobService {
 
     @Transactional(readOnly = true)
     public List<Job> getJobsByEmployer(Long employerId) {
-        return jobRepository.findByEmployerId(employerId);
+        return jobRepository.findByEmployer_Id(employerId);
     }
 
     @Transactional

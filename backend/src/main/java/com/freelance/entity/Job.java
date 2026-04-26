@@ -31,7 +31,7 @@ public class Job {
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "employer_id")
-    @JsonIgnoreProperties({"password", "hibernateLazyInitializer", "handler"})
+    @JsonIgnoreProperties({"password", "email", "hibernateLazyInitializer", "handler"})
     private User employer;
 
     public enum Status {
