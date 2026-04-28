@@ -1,17 +1,9 @@
 package com.freelance.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-import java.math.BigDecimal;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "bids")
@@ -25,17 +17,27 @@ public class Bid {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private BigDecimal amount;
+    private Double amount;
+    private Integer deliveryTime; // gün cinsinden
 
-    private Integer deliveryTime;
-
+    @Column(columnDefinition = "TEXT")
     private String message;
 
-    @ManyToOne
-    @JoinColumn(name = "project_id")
-    private Project project;
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Status status = Status.PENDING;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "freelancer_id")
+    @JsonIgnoreProperties({"password", "email", "hibernateLazyInitializer", "handler", "aboutMe"})
     private User freelancer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "job_id")
+    @JsonIgnore
+    private Job job;
+
+    public enum Status {
+        PENDING, ACCEPTED, REJECTED
+    }
 }

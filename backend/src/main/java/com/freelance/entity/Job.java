@@ -34,6 +34,9 @@ public class Job {
     @JsonIgnoreProperties({"password", "email", "hibernateLazyInitializer", "handler"})
     private User employer;
 
+    @OneToMany(mappedBy = "job", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
+    private java.util.List<Bid> bids;
+
     public enum Status {
         OPEN, IN_PROGRESS, COMPLETED, CANCELLED
     }

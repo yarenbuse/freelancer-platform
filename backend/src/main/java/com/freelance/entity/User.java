@@ -21,6 +21,12 @@ public class User {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Builder.Default
+    private Double rating = 5.0;
+
+    @Column(columnDefinition = "TEXT")
+    private String aboutMe;
+
     public enum Role {
         CLIENT,
         FREELANCER,
