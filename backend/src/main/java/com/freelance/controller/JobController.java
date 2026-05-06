@@ -55,6 +55,47 @@ public class JobController {
         }
     }
 
+    @GetMapping("/freelancer/{freelancerId}")
+    public List<Job> getJobsByFreelancer(@PathVariable Long freelancerId) {
+        return jobService.getJobsByFreelancer(freelancerId);
+    }
+
+    @PostMapping("/{id}/pay")
+    public ResponseEntity<?> payJob(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(jobService.payJob(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/deliver")
+    public ResponseEntity<?> deliverJob(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(jobService.deliverJob(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/approve")
+    public ResponseEntity<?> approveJob(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(jobService.approveJob(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/dispute")
+    public ResponseEntity<?> disputeJob(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(jobService.disputeJob(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
     // ── İç DTO sınıfı ────────────────────────────────────────────────────
     @Data
     public static class JobRequest {

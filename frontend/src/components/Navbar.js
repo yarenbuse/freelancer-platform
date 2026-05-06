@@ -63,6 +63,15 @@ const Navbar = ({ user, roleLabel, onAuthClick, onPostJobClick, handleLogout }) 
               {/* Açılır Menü */}
               {isDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
+                  {user.role === 'ADMIN' && (
+                    <Link
+                      to="/admin/dashboard"
+                      onClick={() => setIsDropdownOpen(false)}
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-orange-50 hover:text-orange-600 font-medium border-b border-gray-50"
+                    >
+                      Admin Paneli
+                    </Link>
+                  )}
                   <Link
                     to={`/profile/${user.id}`}
                     onClick={() => setIsDropdownOpen(false)}

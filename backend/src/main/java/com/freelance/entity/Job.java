@@ -38,6 +38,6 @@ public class Job {
     private java.util.List<Bid> bids;
 
     public enum Status {
-        OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+        OPEN, IN_PROGRESS, PAYMENT_HELD, DELIVERED, COMPLETED, DISPUTED, CANCELLED
     }
 }

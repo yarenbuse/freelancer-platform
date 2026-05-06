@@ -7,6 +7,7 @@ const API = 'http://localhost:8080';
 const Profile = ({ roleLabel, user }) => {
   const { id } = useParams();
   const [profileUser, setProfileUser] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -23,9 +24,13 @@ const Profile = ({ roleLabel, user }) => {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.get(`${API}/api/users/${id}`);
-      setProfileUser(res.data);
-      setAboutMeInput(res.data.aboutMe || '');
+      const [userRes, reviewsRes] = await Promise.all([
+        axios.get(`${API}/api/users/${id}`),
+        axios.get(`${API}/api/reviews/user/${id}`)
+      ]);
+      setProfileUser(userRes.data);
+      setAboutMeInput(userRes.data.aboutMe || '');
+      setReviews(reviewsRes.data);
     } catch (err) {
       console.error('Kullanıcı alınamadı:', err);
       setError('Kullanıcı bulunamadı veya bir hata oluştu.');
@@ -231,6 +236,42 @@ const Profile = ({ roleLabel, user }) => {
               )}
             </div>
           )}
+        </div>
+
+        {/* Yorumlar (Reviews) */}
+        <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
+          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+            <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <span className="text-orange-500">⭐</span> Değerlendirmeler ({reviews.length})
+            </h3>
+          </div>
+          
+          <div className="space-y-4">
+            {reviews.length > 0 ? (
+              reviews.map(review => (
+                <div key={review.id} className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-orange-100 text-orange-600 rounded-full flex justify-center items-center font-bold">
+                        U
+                      </div>
+                      <span className="font-semibold text-gray-700">Kullanıcı #{review.reviewerId}</span>
+                    </div>
+                    <div className="flex space-x-1">
+                      {renderStars(review.score)}
+                    </div>
+                  </div>
+                  <p className="text-gray-600 italic">"{review.comment}"</p>
+                  <p className="text-xs text-gray-400 mt-3">{new Date(review.createdAt).toLocaleDateString('tr-TR')}</p>
+                </div>
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center py-10 text-gray-400">
+                <div className="text-4xl mb-3">😶</div>
+                <p className="font-medium">Henüz bir değerlendirme yapılmamış.</p>
+              </div>
+            )}
+          </div>
         </div>
 
       </div>

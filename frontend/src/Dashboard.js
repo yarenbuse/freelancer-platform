@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import JobCard from './components/JobCard';
+import ReviewModal from './components/ReviewModal';
 
 const API = 'http://localhost:8080';
 
@@ -9,11 +10,16 @@ const Dashboard = ({
   roleLabel,
   myJobs,
   openJobs,
+  freelancerJobs,
   jobsLoading,
   onAuthClick,
   onPostJobClick,
 }) => {
   const [expandedJobId, setExpandedJobId] = useState(null);
+  
+  // Review Modal State
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [jobToReview, setJobToReview] = useState(null);
 
   const displayJobs = openJobs.length > 0 ? openJobs : [
     {
@@ -50,13 +56,26 @@ const Dashboard = ({
 
     try {
       await axios.patch(`${API}/api/bids/${bidId}/status`, { status });
-      alert(`Teklif başarıyla ${status === 'ACCEPTED' ? 'onaylandı' : 'reddedildi'}. Değişikliklerin yansıması için lütfen sayfayı yenileyin.`);
-      // Not: Tam bir UX için `myJobs`'u burada güncelleyen bir callback (örneğin fetchMyJobs) App.js'ten pass edilmeli.
-      // Şimdilik işlemi tamamlayıp sayfayı yenilemelerini söylüyoruz ya da window.location.reload() kullanabiliriz.
+      alert(`Teklif başarıyla ${status === 'ACCEPTED' ? 'onaylandı' : 'reddedildi'}.`);
       window.location.reload();
     } catch (err) {
       console.error('Bid update error:', err);
       alert('İşlem sırasında bir hata oluştu.');
+    }
+  };
+
+  // ── ESCROW ACTIONS ──
+  const handleJobAction = async (jobId, actionPath, confirmMessage) => {
+    if (confirmMessage) {
+      if (!window.confirm(confirmMessage)) return;
+    }
+    try {
+      await axios.post(`${API}/api/jobs/${jobId}/${actionPath}`);
+      alert('İşlem başarılı!');
+      window.location.reload();
+    } catch (err) {
+      console.error('Job action error:', err);
+      alert('İşlem sırasında bir hata oluştu: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -65,8 +84,14 @@ const Dashboard = ({
     return <span className="text-orange-500 font-bold text-sm">⭐ {rating.toFixed(1)}</span>;
   };
 
+  const openReviewModal = (job) => {
+    setJobToReview(job);
+    setIsReviewModalOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
+      
       {/* ════════════ HERO ════════════ */}
       <div className="bg-gradient-to-br from-orange-500 to-orange-600 text-white py-20 px-4 text-center relative overflow-hidden">
         <div
@@ -161,8 +186,13 @@ const Dashboard = ({
                             <h4 className="font-bold text-gray-800 text-xl">{job.title}</h4>
                             <div className="flex items-center space-x-3">
                               <span className={`text-xs font-bold px-3 py-1 rounded-full ${
-                                job.status === 'OPEN' ? 'bg-green-100 text-green-700' : 
-                                job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500'
+                                job.status === 'OPEN' ? 'bg-gray-100 text-gray-700' : 
+                                job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 
+                                job.status === 'PAYMENT_HELD' ? 'bg-yellow-100 text-yellow-700' :
+                                job.status === 'DELIVERED' ? 'bg-purple-100 text-purple-700' :
+                                job.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                                job.status === 'DISPUTED' ? 'bg-red-100 text-red-700' :
+                                'bg-gray-100 text-gray-500'
                               }`}>
                                 {job.status}
                               </span>
@@ -178,15 +208,47 @@ const Dashboard = ({
                               <span>⏱ {job.duration} gün</span>
                             </div>
                             <div className="text-orange-500 flex items-center space-x-1">
-                              <span>Teklifleri Gör</span>
+                              <span>Detaylar & Teklifler</span>
                               <svg className={`w-4 h-4 transform transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
                             </div>
                           </div>
                         </div>
 
-                        {/* Teklifler Alt Menüsü */}
+                        {/* Detaylar Alt Menüsü */}
                         {isExpanded && (
                           <div className="bg-gray-50 p-6">
+                            
+                            {/* Escrow Actions */}
+                            <div className="mb-6 p-4 bg-white rounded-xl shadow-sm border border-orange-100">
+                              <h5 className="font-bold text-gray-800 mb-3 border-b pb-2">İşlem Durumu & Aksiyonlar</h5>
+                              <div className="flex flex-wrap gap-3">
+                                {job.status === 'IN_PROGRESS' && (
+                                  <button onClick={() => handleJobAction(job.id, 'pay', 'Tutarı emanete almak (Ödeme Yapmak) istediğinize emin misiniz?')} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                    Ödeme Yap (Emanete Al)
+                                  </button>
+                                )}
+                                {job.status === 'DELIVERED' && (
+                                  <>
+                                    <button onClick={() => handleJobAction(job.id, 'approve', 'İşi onaylıyor musunuz? Ücret Freelancer\'a aktarılacaktır.')} className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                      Teslimatı Onayla
+                                    </button>
+                                    <button onClick={() => handleJobAction(job.id, 'dispute', 'Anlaşmazlık başlatmak istediğinize emin misiniz?')} className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                      Anlaşmazlık Bildir (Dispute)
+                                    </button>
+                                  </>
+                                )}
+                                {job.status === 'COMPLETED' && (
+                                  <button onClick={() => openReviewModal(job)} className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                    Freelancer'ı Değerlendir
+                                  </button>
+                                )}
+                                {['OPEN', 'PAYMENT_HELD', 'DISPUTED'].includes(job.status) && (
+                                  <span className="text-gray-500 text-sm">Şu an sizin yapabileceğiniz bir aksiyon bulunmuyor.</span>
+                                )}
+                              </div>
+                            </div>
+
+                            <h5 className="font-bold text-gray-800 mb-3 border-b pb-2">Teklifler</h5>
                             {bids.length === 0 ? (
                               <div className="text-center py-6 text-gray-500">
                                 Henüz bu ilana teklif gelmedi.
@@ -254,10 +316,54 @@ const Dashboard = ({
           </>
         )}
 
-        {/* ── FREELANCER / Misafir Görünümü ── */}
+        {/* ── FREELANCER Görünümü (Aldığı İşler) ── */}
+        {user && user.role === 'FREELANCER' && freelancerJobs && freelancerJobs.length > 0 && (
+          <div className="mb-12">
+            <h3 className="text-2xl font-bold text-gray-800 mb-6">Üstlendiğim İşler</h3>
+            <div className="grid grid-cols-1 gap-6">
+              {freelancerJobs.map(job => (
+                <div key={job.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                  <div className="flex justify-between items-start mb-4">
+                    <div>
+                      <h4 className="font-bold text-gray-800 text-xl mb-1">{job.title}</h4>
+                      <p className="text-gray-500 text-sm">Müşteri: {job.employer?.name}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                      job.status === 'OPEN' ? 'bg-gray-100 text-gray-700' : 
+                      job.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-700' : 
+                      job.status === 'PAYMENT_HELD' ? 'bg-yellow-100 text-yellow-700' :
+                      job.status === 'DELIVERED' ? 'bg-purple-100 text-purple-700' :
+                      job.status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+                      job.status === 'DISPUTED' ? 'bg-red-100 text-red-700' :
+                      'bg-gray-100 text-gray-500'
+                    }`}>
+                      {job.status}
+                    </span>
+                  </div>
+                  <div className="flex gap-3 mt-4 border-t pt-4">
+                    {job.status === 'PAYMENT_HELD' && (
+                      <button onClick={() => handleJobAction(job.id, 'deliver', 'İşi teslim etmek istediğinize emin misiniz?')} className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                        İşi Teslim Et
+                      </button>
+                    )}
+                    {job.status === 'COMPLETED' && (
+                      <button onClick={() => openReviewModal(job)} className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                        Müşteriyi Değerlendir
+                      </button>
+                    )}
+                    {!['PAYMENT_HELD', 'COMPLETED'].includes(job.status) && (
+                      <span className="text-gray-500 text-sm">Mevcut durumda bir işlem yapılamaz.</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── FREELANCER / Misafir Görünümü (Tüm İlanlar) ── */}
         {(!user || user.role === 'FREELANCER') && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-
             {/* Filtreler */}
             <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
               <h3 className="font-bold text-gray-800 mb-4 border-b pb-2">Filtreler</h3>
@@ -311,6 +417,16 @@ const Dashboard = ({
           </div>
         )}
       </div>
+
+      <ReviewModal 
+        isOpen={isReviewModalOpen} 
+        onClose={() => setIsReviewModalOpen(false)} 
+        job={jobToReview} 
+        user={user}
+        onSuccess={() => {
+          alert('Değerlendirmeniz başarıyla kaydedildi!');
+        }}
+      />
     </div>
   );
 };

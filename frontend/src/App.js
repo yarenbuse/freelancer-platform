@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Dashboard from './Dashboard';
 import Discover from './pages/Discover';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
 import Navbar from './components/Navbar';
 import axios from 'axios';
 
@@ -17,6 +18,7 @@ function App() {
   // ── İlan state'leri ──────────────────────────────────────────────────────
   const [myJobs,   setMyJobs]   = useState([]);   // CLIENT'ın ilanları
   const [openJobs, setOpenJobs] = useState([]);   // Tüm açık ilanlar (Freelancer görünümü)
+  const [freelancerJobs, setFreelancerJobs] = useState([]); // Freelancer'ın aldığı işler
   const [jobsLoading, setJobsLoading] = useState(false);
   const [successMsg, setSuccessMsg]   = useState('');  // Başarı bildirimi
 
@@ -36,6 +38,9 @@ function App() {
       setUser(parsedUser);
       if (parsedUser.role === 'CLIENT') {
         fetchMyJobs(parsedUser.id);
+      } else if (parsedUser.role === 'FREELANCER') {
+        fetchOpenJobs();
+        fetchFreelancerJobs(parsedUser.id);
       } else {
         fetchOpenJobs();
       }
@@ -76,6 +81,17 @@ function App() {
     }
   }, []);
 
+  // ── API: Freelancer'ın üstlendiği ilanları çek ─────────────────────────────
+  const fetchFreelancerJobs = useCallback(async (userId) => {
+    if (!userId) return;
+    try {
+      const res = await axios.get(`${API}/api/jobs/freelancer/${userId}`);
+      setFreelancerJobs(res.data);
+    } catch (err) {
+      console.error('Freelancer ilanları alınamadı:', err.message);
+    }
+  }, []);
+
   // ── Giriş Yap ────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -90,6 +106,9 @@ function App() {
       // Giriş sonrası ilgili ilanları çek
       if (loggedUser.role === 'CLIENT') {
         fetchMyJobs(loggedUser.id);
+      } else if (loggedUser.role === 'FREELANCER') {
+        fetchOpenJobs();
+        fetchFreelancerJobs(loggedUser.id);
       } else {
         fetchOpenJobs();
       }
@@ -115,6 +134,9 @@ function App() {
       // Kayıt sonrası ilgili ilanları çek
       if (newUser.role === 'CLIENT') {
         fetchMyJobs(newUser.id);
+      } else if (newUser.role === 'FREELANCER') {
+        fetchOpenJobs();
+        fetchFreelancerJobs(newUser.id);
       } else {
         fetchOpenJobs();
       }
@@ -131,6 +153,7 @@ function App() {
     setUser(null);
     localStorage.removeItem('user');
     setMyJobs([]);
+    setFreelancerJobs([]);
     fetchOpenJobs(); // Misafirler için açık işleri tekrar çek
   };
 
@@ -202,6 +225,7 @@ function App() {
                   roleLabel={roleLabel}
                   myJobs={myJobs}
                   openJobs={openJobs}
+                  freelancerJobs={freelancerJobs}
                   jobsLoading={jobsLoading}
                   onAuthClick={() => { setAuthTab('login'); setIsAuthOpen(true); }}
                   onPostJobClick={() => setIsJobOpen(true)}
@@ -210,6 +234,7 @@ function App() {
             />
             <Route path="/discover" element={<Discover user={user} />} />
             <Route path="/profile/:id" element={<Profile roleLabel={roleLabel} user={user} />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard user={user} roleLabel={roleLabel} />} />
           </Routes>
         </div>
 
