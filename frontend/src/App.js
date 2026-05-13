@@ -30,25 +30,6 @@ function App() {
   const [authError, setAuthError] = useState('');
   const [jobError,  setJobError]  = useState('');
 
-  // ── Check Local Storage on Mount ─────────────────────────────────────────
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      setUser(parsedUser);
-      if (parsedUser.role === 'CLIENT') {
-        fetchMyJobs(parsedUser.id);
-      } else if (parsedUser.role === 'FREELANCER') {
-        fetchOpenJobs();
-        fetchFreelancerJobs(parsedUser.id);
-      } else {
-        fetchOpenJobs();
-      }
-    } else {
-      fetchOpenJobs(); // Misafir için de ilanları çek
-    }
-  }, []);
-
   // ── Rol etiketi ──────────────────────────────────────────────────────────
   const roleLabel = (role) => {
     if (role === 'CLIENT')     return 'Müşteri';
@@ -85,12 +66,32 @@ function App() {
   const fetchFreelancerJobs = useCallback(async (userId) => {
     if (!userId) return;
     try {
-      const res = await axios.get(`${API}/api/jobs/freelancer/${userId}`);
+      const res = await axios.get(`${API}/api/jobs/my-works?freelancerId=${userId}`);
+      console.log('fetchFreelancerJobs response:', res.data);
       setFreelancerJobs(res.data);
     } catch (err) {
       console.error('Freelancer ilanları alınamadı:', err.message);
     }
   }, []);
+
+  // ── Check Local Storage on Mount ─────────────────────────────────────────
+  useEffect(() => {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser);
+      setUser(parsedUser);
+      if (parsedUser.role === 'CLIENT') {
+        fetchMyJobs(parsedUser.id);
+      } else if (parsedUser.role === 'FREELANCER') {
+        fetchOpenJobs();
+        fetchFreelancerJobs(parsedUser.id);
+      } else {
+        fetchOpenJobs();
+      }
+    } else {
+      fetchOpenJobs(); // Misafir için de ilanları çek
+    }
+  }, [fetchMyJobs, fetchOpenJobs, fetchFreelancerJobs]);
 
   // ── Giriş Yap ────────────────────────────────────────────────────────────
   const handleLogin = async (e) => {

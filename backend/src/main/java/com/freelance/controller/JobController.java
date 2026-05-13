@@ -60,6 +60,11 @@ public class JobController {
         return jobService.getJobsByFreelancer(freelancerId);
     }
 
+    @GetMapping("/my-works")
+    public List<Job> getMyWorks(@RequestParam Long freelancerId) {
+        return jobService.getJobsByFreelancer(freelancerId);
+    }
+
     @PostMapping("/{id}/pay")
     public ResponseEntity<?> payJob(@PathVariable Long id) {
         try {
@@ -73,6 +78,18 @@ public class JobController {
     public ResponseEntity<?> deliverJob(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(jobService.deliverJob(id));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/{id}/deliver-with-file")
+    public ResponseEntity<?> deliverJobWithFile(
+            @PathVariable Long id,
+            @RequestParam(value = "file", required = false) org.springframework.web.multipart.MultipartFile file,
+            @RequestParam(value = "note", required = false) String note) {
+        try {
+            return ResponseEntity.ok(jobService.deliverJobWithFile(id, file, note));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }

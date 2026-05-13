@@ -48,7 +48,10 @@ public class JobService {
         List<Bid> acceptedBids = bidRepository.findByFreelancer_Id(freelancerId).stream()
                 .filter(bid -> bid.getStatus() == Bid.Status.ACCEPTED)
                 .collect(Collectors.toList());
-        return acceptedBids.stream().map(Bid::getJob).collect(Collectors.toList());
+        List<Long> jobIds = acceptedBids.stream()
+                .map(bid -> bid.getJob().getId())
+                .collect(Collectors.toList());
+        return jobRepository.findAllById(jobIds);
     }
 
     @Transactional
@@ -102,6 +105,33 @@ public class JobService {
         if (job.getStatus() != Job.Status.PAYMENT_HELD) {
             throw new RuntimeException("Ödeme beklemeye alınmadan iş teslim edilemez.");
         }
+        job.setStatus(Job.Status.DELIVERED);
+        return jobRepository.save(job);
+    }
+
+    @Transactional
+    public Job deliverJobWithFile(Long jobId, org.springframework.web.multipart.MultipartFile file, String note) {
+        Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+        if (job.getStatus() != Job.Status.PAYMENT_HELD) {
+            throw new RuntimeException("Ödeme beklemeye alınmadan iş teslim edilemez.");
+        }
+
+        if (file != null && !file.isEmpty()) {
+            try {
+                java.nio.file.Path uploadDir = java.nio.file.Paths.get("uploads");
+                if (!java.nio.file.Files.exists(uploadDir)) {
+                    java.nio.file.Files.createDirectories(uploadDir);
+                }
+                String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
+                java.nio.file.Path targetLocation = uploadDir.resolve(filename);
+                java.nio.file.Files.copy(file.getInputStream(), targetLocation, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                job.setDeliveryFilePath(targetLocation.toString());
+            } catch (Exception e) {
+                throw new RuntimeException("Dosya kaydedilemedi: " + e.getMessage());
+            }
+        }
+
+        job.setDeliveryNote(note);
         job.setStatus(Job.Status.DELIVERED);
         return jobRepository.save(job);
     }

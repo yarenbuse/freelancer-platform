@@ -10,6 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Job {
 
     @Id
@@ -36,6 +37,11 @@ public class Job {
 
     @OneToMany(mappedBy = "job", fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private java.util.List<Bid> bids;
+
+    private String deliveryFilePath;
+
+    @Column(columnDefinition = "TEXT")
+    private String deliveryNote;
 
     public enum Status {
         OPEN, IN_PROGRESS, PAYMENT_HELD, DELIVERED, COMPLETED, DISPUTED, CANCELLED
